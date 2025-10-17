@@ -133,12 +133,67 @@ void regenerate(Agent pop[POP_SIZE]){
     mutate(pop);
 }
 
+
+// Save population to a single binary file, appending each cycle's data
+void savePopulation(const Agent pop[POP_SIZE], int cycle) {
+    FILE *fp = fopen("populations.bin", "ab"); // append binary mode
+    if (!fp) {
+        perror("Failed to open populations.bin for writing");
+        return;
+    }
+
+    // Write a header (cycle number) before each population
+    if (fwrite(&cycle, sizeof(int), 1, fp) != 1) {
+        perror("Failed to write cycle header");
+        fclose(fp);
+        return;
+    }
+
+    // Write all agents
+    size_t written = fwrite(pop, sizeof(Agent), POP_SIZE, fp);
+    if (written != POP_SIZE) {
+        fprintf(stderr, "Warning: only wrote %zu/%d agents at cycle %d\n", written, POP_SIZE, cycle);
+    }
+
+    fclose(fp);
+    printf("✅ Saved population for cycle %d\n", cycle);
+}
+
+// Load population for a given cycle from the single file
+int loadPopulation(Agent pop[POP_SIZE], int targetCycle) {
+    FILE *fp = fopen("populations.bin", "rb");
+    if (!fp) {
+        perror("Failed to open populations.bin for reading");
+        return 0; // failure
+    }
+
+    int cycle;
+    while (fread(&cycle, sizeof(int), 1, fp) == 1) {
+        if (fread(pop, sizeof(Agent), POP_SIZE, fp) != POP_SIZE) {
+            fprintf(stderr, "Corrupted data at cycle %d\n", cycle);
+            fclose(fp);
+            return 0;
+        }
+
+        if (cycle == targetCycle) {
+            fclose(fp);
+            printf("✅ Loaded population from cycle %d\n", targetCycle);
+            return 1; // success
+        }
+    }
+
+    fclose(fp);
+    fprintf(stderr, "❌ Cycle %d not found in populations.bin\n", targetCycle);
+    return 0; // not found
+}
+
+
 int main(){
     srand((unsigned)time(NULL));
     Agent population[POP_SIZE];
     for(int i=0;i<POP_SIZE;i++) population[i]=makeRandomAgent();
 
-    FILE *f=fopen("avg_payoff1.csv","w");
+    FILE *f=fopen("avg_payoff4.csv","w");
     fprintf(f,"cycle,avg_payoff\n");
 
     for(int c=0;c<CYCLE;c++){
@@ -157,12 +212,16 @@ int main(){
         fprintf(f,"%d,%.2f\n",c,avgPay);
 
         regenerate(population);
+
+        if (c % 100 == 0) {
+            savePopulation(population, c);
+        }
     }
     fclose(f);
 
-    for (int i = 0; i < 10; i++) {
-        printAgent(&population[i]);
-    }
+    // for (int i = 0; i < 10; i++) {
+    //     printAgent(&population[i]);
+    // }
 
     return 0;
 }
