@@ -7,11 +7,10 @@ In each cycle, I would save the struct of the agents into a binary file, then I 
 # How to run
 
 Change the output data file names
-
+```bash
 gcc main.c -o simulation
 simulation
 py plot.py
-
-Check the cycle that you like to inspect
-Load them with load.c, parse the agents with parser.c, plot the agents and propensity to cooperate in the population using plot3.py
+```
+Check the cycle that you like to inspect. Load the population with `load.c`, parse the agents with `parser.c`, plot the agents and propensity to cooperate in the population using `plot3.py`
 
